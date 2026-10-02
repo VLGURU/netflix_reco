@@ -1,0 +1,7 @@
+pandas
+numpy
+scikit-learn
+flask
+requests
+python-dotenv
+python-telegram-bot==21.6
