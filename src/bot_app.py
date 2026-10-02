@@ -1,4 +1,5 @@
 import os
+import asyncio
 from dotenv import load_dotenv
 
 from telegram import Update
@@ -40,12 +41,18 @@ async def find_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not text:
         await update.message.reply_text("Формат: /find <название>")
         return
+
     found = rec.find_by_title(text, limit=10)
     if found.empty:
         await update.message.reply_text("Ничего не нашлось.")
         return
-    msg = "\n".join([f"- {r['title']} ({r['type']}, {r['release_year']}) | {r['duration']} | {r['listed_in']}"
-                     for _, r in found.iterrows()])
+
+    msg = "\n".join(
+        [
+            f"- {r['title']} ({r['type']}, {r['release_year']}) | {r['duration']} | {r['listed_in']}"
+            for _, r in found.iterrows()
+        ]
+    )
     await update.message.reply_text(msg[:3500])
 
 
@@ -54,14 +61,17 @@ async def weak_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not q:
         await update.message.reply_text("Формат: /weak <запрос>")
         return
+
     user_id = uid(update)
     log_query(user_id, q)
     prof = user_profile(user_id)
+
     top = rec.recommend(q, top_n=5, mode="weak", user_profile=prof)
     parts = []
     for _, row in top.iterrows():
         parts.append(rec.format_item(row))
         parts.append("-" * 30)
+
     await update.message.reply_text("\n".join(parts)[:3500])
 
 
@@ -92,9 +102,11 @@ async def review_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "|" not in payload:
         await update.message.reply_text("Формат: /review <title> | <text> | <1-5 (необязательно)>")
         return
+
     parts = [p.strip() for p in payload.split("|")]
     title = parts[0]
     text = parts[1] if len(parts) > 1 else ""
+
     rating = None
     if len(parts) > 2 and parts[2]:
         try:
@@ -111,6 +123,7 @@ async def stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not title:
         await update.message.reply_text("Формат: /stats <title>")
         return
+
     st = review_stats_for_title(title)
     await update.message.reply_text(str(st))
 
@@ -124,9 +137,11 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = (update.message.text or "").strip()
     if not q:
         return
+
     user_id = uid(update)
     log_query(user_id, q)
     prof = user_profile(user_id)
+
     top = rec.recommend(q, top_n=5, mode="best", user_profile=prof)
 
     beep()
@@ -134,13 +149,14 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for _, row in top.iterrows():
         parts.append(rec.format_item(row))
         parts.append("-" * 30)
+
     await update.message.reply_text("\n".join(parts)[:3500])
 
 
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
-        raise RuntimeError("Нет TELEGRAM_BOT_TOKEN. Создайте .env и добавьте токен.")
+        raise RuntimeError("Нет TELEGRAM_BOT_TOKEN. Создайте .env и добавьте токен (или задайте env var на Render).")
 
     app = Application.builder().token(token).build()
 
@@ -151,8 +167,13 @@ def main():
     app.add_handler(CommandHandler("review", review_cmd))
     app.add_handler(CommandHandler("stats", stats_cmd))
     app.add_handler(CommandHandler("profile", profile_cmd))
-
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+
+    # FIX для Python 3.13/3.14: создаём event loop, если его нет
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
 
     app.run_polling()
 
