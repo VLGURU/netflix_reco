@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Results</title>
+</head>
+<body>
+  <a href="/">← назад</a>
+  <h3>Запрос: {{ q }} (режим: {{ mode }})</h3>
+
+  {% for item in items %}
+    <hr>
+    <b>{{ item["title"] }}</b> ({{ item["type"] }}, {{ item["release_year"] }})<br>
+    Жанры: {{ item["listed_in"] }}<br>
+    Длительность: {{ item["duration"] }} | Рейтинг: {{ item["rating"] }}<br>
+    Совместимость: {{ "%.1f"|format(item["compatibility_pct"]) }}% | Баллы: {{ "%.1f"|format(item["score"]) }}<br>
+    <i>{{ item["description"] }}</i>
+  {% endfor %}
+</body>
+</html>

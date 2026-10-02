@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Netflix Recommender</title>
+</head>
+<body>
+  <h2>Netflix Recommender (имитация нейросети)</h2>
+
+  {% if error %}
+    <p style="color:red">{{ error }}</p>
+  {% endif %}
+
+  <form action="/search" method="get">
+    <label>Запрос:</label><br>
+    <input name="q" style="width: 600px" placeholder="например: комедия новый фильм 2018-2022 80-120 мин"><br><br>
+
+    <label>Режим:</label>
+    <select name="mode">
+      <option value="best">TOP лучших</option>
+      <option value="weak">TOP слабых</option>
+    </select>
+    <br><br>
+
+    <button type="submit">Искать</button>
+  </form>
+</body>
+</html>
